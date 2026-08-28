@@ -1,33 +1,79 @@
 function calculer() {
-    let c20_26 = parseFloat(document.getElementById('c_20_26').value) || 0;
-    let col_ec = parseFloat(document.getElementById('col_ec').value) || 0;
-    let col_cc = parseFloat(document.getElementById('col_cc').value) || 0;
+    // 1. Récupération des données calibres
+    let calibres = {
+        "<17": parseFloat(document.getElementById('c_17').value) || 0,
+        "17/20": parseFloat(document.getElementById('c_17_20').value) || 0,
+        "20/25": parseFloat(document.getElementById('c_20_25').value) || 0,
+        "25/30": parseFloat(document.getElementById('c_25_30').value) || 0,
+        "30/35": parseFloat(document.getElementById('c_30_35').value) || 0
+    };
 
+    // 2. Récupération des données colorations
+    let colorations = {
+        "EC": parseFloat(document.getElementById('col_ec').value) || 0,
+        "CC": parseFloat(document.getElementById('col_cc').value) || 0,
+        "CL": parseFloat(document.getElementById('col_cl').value) || 0,
+        "EL": parseFloat(document.getElementById('col_el').value) || 0
+    };
+
+    // Initialisation des 3 sorties fixes de début de ligne
     let grille = [
-        { sortie: "S01", affectation: "🔒 Q3 (Défauts Fixes)" },
-        { sortie: "S02", affectation: "🔒 TV (Trop Vert - Fixe)" },
-        { sortie: "S03", affectation: "🔒 TR (Trop Rouge - Fixe)" }
+        { sortie: "S01", affectation: "<span class='badge-fixe'>🔒 Q3</span> Défauts Fixes" },
+        { sortie: "S02", affectation: "<span class='badge-fixe'>🔒 TV</span> Trop Vert (Fixe)" },
+        { sortie: "S03", affectation: "<span class='badge-fixe'>🔒 TR</span> Trop Rouge (Fixe)" }
     ];
 
-    let n_20_26_EC = Math.round((c20_26/100) * (col_ec/100) * 15);
-    let n_20_26_CC = Math.round((c20_26/100) * (col_cc/100) * 15);
+    // 3. Calcul de toutes les combinaisons possibles (Matrice Calibre x Couleur)
+    let combinaisons = [];
+    for (let c in calibres) {
+        for (let col in colorations) {
+            let pct = (calibres[c] / 100) * (colorations[col] / 100);
+            if (pct > 0) {
+                combinaisons.push({ label: `${c} — ${col}`, volume: pct });
+            }
+        }
+    }
+
+    // Tri des combinaisons du plus fort volume au plus faible
+    combinaisons.sort((a, b) => b.volume - a.volume);
+
+    // 4. Isolation du circuit le plus faible pour la Sortie 20
+    let circuitPlusFaible = combinaisons.length > 0 ? combinaisons[combinaisons.length - 1] : { label: "Divers / Hors-Calibre", volume: 0 };
     
-    for(let i = 4; i <= 3 + n_20_26_EC; i++) {
-        grille.push({ sortie: `S${i < 10 ? '0'+i : i}`, affectation: "🟩 20/26 — EC (Dominant)" });
-    }
-    
-    let debut_CC = 4 + n_20_26_EC;
-    for(let i = debut_CC; i < debut_CC + n_20_26_CC; i++) {
-        if(i <= 18) grille.push({ sortie: `S${i < 10 ? '0'+i : i}`, affectation: "🟧 20/26 — CC (Secondaire)" });
+    // Combinaisons restantes pour les sorties S04 à S19 (16 sorties)
+    let combinaisonsMain = combinaisons.slice(0, combinaisons.length - 1);
+    let totalVolumeMain = combinaisonsMain.reduce((sum, item) => sum + item.volume, 0);
+
+    // 5. Affectation dynamique des sorties S04 à S19 (16 Sorties)
+    let sortiesAFFECTEES = [];
+    combinaisonsMain.forEach(item => {
+        let nbSorties = Math.round((item.volume / (totalVolumeMain || 1)) * 16);
+        for (let i = 0; i < nbSorties; i++) {
+            if (sortiesAFFECTEES.length < 16) {
+                sortiesAFFECTEES.push(item.label);
+            }
+        }
+    });
+
+    // Ajustement au cas où le total des arrondis fait moins de 16 sorties
+    while (sortiesAFFECTEES.length < 16) {
+        sortiesAFFECTEES.push(combinaisonsMain[0] ? combinaisonsMain[0].label : "20/25 — EC");
     }
 
-    for(let i = grille.length + 1; i <= 18; i++) {
-        grille.push({ sortie: `S${i < 10 ? '0'+i : i}`, affectation: "🟦 18/20 — EC / CL (Ajustement)" });
+    // Enregistrement des sorties S04 à S19
+    for (let i = 0; i < 16; i++) {
+        let numSortie = i + 4;
+        let sNom = numSortie < 10 ? `S0${numSortie}` : `S${numSortie}`;
+        grille.push({ sortie: sNom, affectation: `🟩 ${sortiesAFFECTEES[i]}` });
     }
 
-    grille.push({ sortie: "S19", affectation: "🟪 Circuits Faibles / Q2 (<5%)" });
-    grille.push({ sortie: "S20", affectation: "🟪 Circuits Faibles / Q2 (<5%)" });
+    // 6. Affectation explicite du circuit le plus faible à la Sortie 20
+    grille.push({ 
+        sortie: "S20", 
+        affectation: `<span class='badge-faible'>🟪 CIRCUIT PLUS FAIBLE</span> ${circuitPlusFaible.label} (${(circuitPlusFaible.volume * 100).toFixed(1)}%)` 
+    });
 
+    // 7. Affichage dans le tableau
     let tbody = document.getElementById('tableau-body');
     tbody.innerHTML = "";
     grille.forEach(item => {
