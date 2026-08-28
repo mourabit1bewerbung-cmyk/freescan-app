@@ -11,11 +11,13 @@
         h2 { font-size: 1rem; color: #1b365d; border-bottom: 2px solid #1b365d; padding-bottom: 5px; margin-top: 0; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { font-size: 0.8rem; font-weight: bold; display: block; }
-        input { width: 80%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+        input { width: 85%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
         button { width: 100%; padding: 12px; background: #1b365d; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 1rem; cursor: pointer; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ddd; padding: 8px; font-size: 0.85rem; text-align: left; }
         th { background-color: #1b365d; color: white; }
+        .badge-faible { background-color: #f39c12; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .badge-fixe { background-color: #e74c3c; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -25,11 +27,11 @@
     <div class="card">
         <h2>📦 1. Répartition Calibres (%)</h2>
         <div class="grid">
-            <div><label>&lt;18 :</label><input type="number" id="c_18" value="1"></div>
-            <div><label>18/20 :</label><input type="number" id="c_18_20" value="17"></div>
-            <div><label>20/26 :</label><input type="number" id="c_20_26" value="76"></div>
-            <div><label>26/32 :</label><input type="number" id="c_26_32" value="5"></div>
-            <div><label>&gt;32 :</label><input type="number" id="c_32" value="1"></div>
+            <div><label>&lt;17 :</label><input type="number" id="c_17" value="1"></div>
+            <div><label>17/20 :</label><input type="number" id="c_17_20" value="17"></div>
+            <div><label>20/25 :</label><input type="number" id="c_20_25" value="76"></div>
+            <div><label>25/30 :</label><input type="number" id="c_25_30" value="5"></div>
+            <div><label>30/35 :</label><input type="number" id="c_30_35" value="1"></div>
         </div>
     </div>
 
