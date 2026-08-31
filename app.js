@@ -43,36 +43,52 @@ function calculer() {
     // Combinaisons pour S04 à S19 (16 sorties)
     let combinaisonsMain = combinaisons.slice(0, combinaisons.length - 1);
 
-    let sortiesAFFECTEES = [];
+    // Dictionnaire pour compter combien de sorties attribuer à chaque produit
+    let repartitionMap = {};
+    combinaisonsMain.forEach(item => repartitionMap[item.label] = 0);
 
-    // ÉTAPE A : Donner AU MOINS 1 sortie à chaque combinaison ayant un volume significatif (> 0.5%)
+    // ÉTAPE A : Assurer au moins 1 sortie pour les volumes >= 0.5%
+    let nbAttribuées = 0;
     combinaisonsMain.forEach(item => {
-        if (item.volume >= 0.005 && sortiesAFFECTEES.length < 16) {
-            sortiesAFFECTEES.push(item.label);
+        if (item.volume >= 0.005 && nbAttribuées < 16) {
+            repartitionMap[item.label] = 1;
+            nbAttribuées++;
         }
     });
 
-    // ÉTAPE B : Distribuer les sorties RESTANTES au prorata du volume (pour charger le 20/25)
+    // ÉTAPE B : Distribuer le reste des sorties (placesRestantes) au prorata des volumes
     let totalVolumeMain = combinaisonsMain.reduce((sum, item) => sum + item.volume, 0);
-    let placesRestantes = 16 - sortiesAFFECTEES.length;
+    let placesRestantes = 16 - nbAttribuées;
 
     if (placesRestantes > 0) {
         combinaisonsMain.forEach(item => {
-            let nbEnPlus = Math.round((item.volume / (totalVolumeMain || 1)) * placesRestantes);
-            for (let i = 0; i < nbEnPlus; i++) {
-                if (sortiesAFFECTEES.length < 16) {
-                    sortiesAFFECTEES.push(item.label);
+            let nbBonus = Math.round((item.volume / (totalVolumeMain || 1)) * placesRestantes);
+            for (let i = 0; i < nbBonus; i++) {
+                if (nbAttribuées < 16) {
+                    repartitionMap[item.label]++;
+                    nbAttribuées++;
                 }
             }
         });
     }
 
-    // ÉTAPE C : Sécurité au cas où il reste des trous
+    // ÉTAPE C : Sécurité si total < 16 sorties
     let idx = 0;
-    while (sortiesAFFECTEES.length < 16) {
-        sortiesAFFECTEES.push(combinaisonsMain[idx % combinaisonsMain.length].label);
+    while (nbAttribuées < 16) {
+        let label = combinaisonsMain[idx % combinaisonsMain.length].label;
+        repartitionMap[label]++;
+        nbAttribuées++;
         idx++;
     }
+
+    // ÉTAPE D : Génération de la liste ordonnée et REGROUPÉE
+    let sortiesAFFECTEES = [];
+    combinaisonsMain.forEach(item => {
+        let count = repartitionMap[item.label];
+        for (let i = 0; i < count; i++) {
+            sortiesAFFECTEES.push(item.label);
+        }
+    });
 
     // Remplissage S04 à S19
     for (let i = 0; i < 16; i++) {
@@ -96,5 +112,3 @@ function calculer() {
 
     document.getElementById('zone-resultat').style.display = 'block';
 }
-
-
