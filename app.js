@@ -1,4 +1,3 @@
-
 function calculer() {
     // 1. Récupération des données calibres
     let calibres = {
@@ -38,21 +37,21 @@ function calculer() {
     // Tri par volume décroissant
     combinaisons.sort((a, b) => b.volume - a.volume);
 
-    // 4. Identification du circuit le plus faible STRICTEMENT INFÉRIEUR À 0.5% (0.005)
+    // 4. Identification du circuit faible LE PLUS PROCHE DE 0.5% (Option B)
     let circuitPlusFaibleIndex = -1;
     
-    // Recherche en partant de la fin (du plus faible volume)
-    for (let i = combinaisons.length - 1; i >= 0; i--) {
+    // Scan du haut vers le bas pour trouver le PREMIER sous 0.5%
+    for (let i = 0; i < combinaisons.length; i++) {
         if (combinaisons[i].volume < 0.005) {
             circuitPlusFaibleIndex = i;
-            break; // On prend la plus faible sous 0.5%
+            break; 
         }
     }
 
     let circuitPlusFaible = { label: "Aucun (<0.5%)", volume: 0 };
     let combinaisonsMain = [...combinaisons];
 
-    // Si on trouve une combinaison < 0.5%, on la retire pour la réserver à S20
+    // Si trouvé, on le réserve exclusivement pour la Sortie 20
     if (circuitPlusFaibleIndex !== -1) {
         circuitPlusFaible = combinaisons[circuitPlusFaibleIndex];
         combinaisonsMain.splice(circuitPlusFaibleIndex, 1);
@@ -117,7 +116,7 @@ function calculer() {
         grille.push({ sortie: sNom, affectation: libelle });
     }
 
-    // Sortie 20 (Réservée au circuit faible < 0.5%)
+    // Sortie 20 (Réservée au circuit faible le plus proche de 0.5%)
     grille.push({ 
         sortie: "S20", 
         affectation: `<span class='badge-faible'>🟪 CIRCUIT FAIBLE (<0.5%)</span> ${circuitPlusFaible.label} (${(circuitPlusFaible.volume * 100).toFixed(2)}%)` 
