@@ -16,7 +16,7 @@ function calculer() {
         "EL": parseFloat(document.getElementById('col_el').value) || 0
     };
 
-    // Sorties fixes
+    // Sorties fixes S01 à S03
     let grille = [
         { sortie: "S01", affectation: "<span class='badge-fixe'>🔒 Q3</span> Défauts Fixes" },
         { sortie: "S02", affectation: "<span class='badge-fixe'>🔒 TV</span> Trop Vert (Fixe)" },
@@ -42,26 +42,36 @@ function calculer() {
     
     // Combinaisons pour S04 à S19 (16 sorties)
     let combinaisonsMain = combinaisons.slice(0, combinaisons.length - 1);
-    let totalVolumeMain = combinaisonsMain.reduce((sum, item) => sum + item.volume, 0);
 
     let sortiesAFFECTEES = [];
 
-    // Répartition proportionnelle
+    // ÉTAPE A : Donner AU MOINS 1 sortie à chaque combinaison ayant un volume significatif (> 0.5%)
     combinaisonsMain.forEach(item => {
-        let nbSorties = Math.round((item.volume / (totalVolumeMain || 1)) * 16);
-        for (let i = 0; i < nbSorties; i++) {
-            if (sortiesAFFECTEES.length < 16) {
-                sortiesAFFECTEES.push(item.label);
-            }
+        if (item.volume >= 0.005 && sortiesAFFECTEES.length < 16) {
+            sortiesAFFECTEES.push(item.label);
         }
     });
 
-    // Remplissage séquentiel des cases manquantes avec les combinaisons suivantes dans l'ordre
-    let indexComb = 0;
+    // ÉTAPE B : Distribuer les sorties RESTANTES au prorata du volume (pour charger le 20/25)
+    let totalVolumeMain = combinaisonsMain.reduce((sum, item) => sum + item.volume, 0);
+    let placesRestantes = 16 - sortiesAFFECTEES.length;
+
+    if (placesRestantes > 0) {
+        combinaisonsMain.forEach(item => {
+            let nbEnPlus = Math.round((item.volume / (totalVolumeMain || 1)) * placesRestantes);
+            for (let i = 0; i < nbEnPlus; i++) {
+                if (sortiesAFFECTEES.length < 16) {
+                    sortiesAFFECTEES.push(item.label);
+                }
+            }
+        });
+    }
+
+    // ÉTAPE C : Sécurité au cas où il reste des trous
+    let idx = 0;
     while (sortiesAFFECTEES.length < 16) {
-        let labelProchain = combinaisonsMain[indexComb % combinaisonsMain.length].label;
-        sortiesAFFECTEES.push(labelProchain);
-        indexComb++;
+        sortiesAFFECTEES.push(combinaisonsMain[idx % combinaisonsMain.length].label);
+        idx++;
     }
 
     // Remplissage S04 à S19
@@ -74,7 +84,7 @@ function calculer() {
     // Sortie 20
     grille.push({ 
         sortie: "S20", 
-        affectation: `<span class='badge-faible'>🟪 CIRCUIT PLUS FAIBLE</span> ${circuitPlusFaible.label} (${(circuitPlusFaible.volume * 100).toFixed(1)}%)` 
+        affectation: `<span class='badge-faible'>🟪 CIRCUIT PLUS FAIBLE</span> ${circuitPlusFaible.label} (${(circuitPlusFaible.volume * 100).toFixed(2)}%)` 
     });
 
     // Affichage
@@ -86,3 +96,5 @@ function calculer() {
 
     document.getElementById('zone-resultat').style.display = 'block';
 }
+
+
