@@ -16,14 +16,14 @@ function calculer() {
         "EL": parseFloat(document.getElementById('col_el').value) || 0
     };
 
-    // Initialisation des 3 sorties fixes de début de ligne
+    // Sorties fixes
     let grille = [
         { sortie: "S01", affectation: "<span class='badge-fixe'>🔒 Q3</span> Défauts Fixes" },
         { sortie: "S02", affectation: "<span class='badge-fixe'>🔒 TV</span> Trop Vert (Fixe)" },
         { sortie: "S03", affectation: "<span class='badge-fixe'>🔒 TR</span> Trop Rouge (Fixe)" }
     ];
 
-    // 3. Calcul de toutes les combinaisons possibles (Matrice Calibre x Couleur)
+    // 3. Calcul de toutes les combinaisons possibles
     let combinaisons = [];
     for (let c in calibres) {
         for (let col in colorations) {
@@ -34,18 +34,19 @@ function calculer() {
         }
     }
 
-    // Tri des combinaisons du plus fort volume au plus faible
+    // Tri par volume décroissant
     combinaisons.sort((a, b) => b.volume - a.volume);
 
-    // 4. Isolation du circuit le plus faible pour la Sortie 20
-    let circuitPlusFaible = combinaisons.length > 0 ? combinaisons[combinaisons.length - 1] : { label: "Divers / Hors-Calibre", volume: 0 };
+    // 4. Circuit le plus faible -> S20
+    let circuitPlusFaible = combinaisons.length > 0 ? combinaisons[combinaisons.length - 1] : { label: "Divers", volume: 0 };
     
-    // Combinaisons restantes pour les sorties S04 à S19 (16 sorties)
+    // Combinaisons pour S04 à S19 (16 sorties)
     let combinaisonsMain = combinaisons.slice(0, combinaisons.length - 1);
     let totalVolumeMain = combinaisonsMain.reduce((sum, item) => sum + item.volume, 0);
 
-    // 5. Affectation dynamique des sorties S04 à S19 (16 Sorties)
     let sortiesAFFECTEES = [];
+
+    // Répartition proportionnelle
     combinaisonsMain.forEach(item => {
         let nbSorties = Math.round((item.volume / (totalVolumeMain || 1)) * 16);
         for (let i = 0; i < nbSorties; i++) {
@@ -55,25 +56,28 @@ function calculer() {
         }
     });
 
-    // Ajustement au cas où le total des arrondis fait moins de 16 sorties
+    // Remplissage séquentiel des cases manquantes avec les combinaisons suivantes dans l'ordre
+    let indexComb = 0;
     while (sortiesAFFECTEES.length < 16) {
-        sortiesAFFECTEES.push(combinaisonsMain[0] ? combinaisonsMain[0].label : "20/25 — EC");
+        let labelProchain = combinaisonsMain[indexComb % combinaisonsMain.length].label;
+        sortiesAFFECTEES.push(labelProchain);
+        indexComb++;
     }
 
-    // Enregistrement des sorties S04 à S19
+    // Remplissage S04 à S19
     for (let i = 0; i < 16; i++) {
         let numSortie = i + 4;
         let sNom = numSortie < 10 ? `S0${numSortie}` : `S${numSortie}`;
         grille.push({ sortie: sNom, affectation: `🟩 ${sortiesAFFECTEES[i]}` });
     }
 
-    // 6. Affectation explicite du circuit le plus faible à la Sortie 20
+    // Sortie 20
     grille.push({ 
         sortie: "S20", 
         affectation: `<span class='badge-faible'>🟪 CIRCUIT PLUS FAIBLE</span> ${circuitPlusFaible.label} (${(circuitPlusFaible.volume * 100).toFixed(1)}%)` 
     });
 
-    // 7. Affichage dans le tableau
+    // Affichage
     let tbody = document.getElementById('tableau-body');
     tbody.innerHTML = "";
     grille.forEach(item => {
