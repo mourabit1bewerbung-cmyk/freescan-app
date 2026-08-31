@@ -1,3 +1,4 @@
+
 function calculer() {
     // 1. Récupération des données calibres
     let calibres = {
@@ -23,7 +24,7 @@ function calculer() {
         { sortie: "S03", affectation: "<span class='badge-fixe'>🔒 TR</span> Trop Rouge (Fixe)" }
     ];
 
-    // 3. Calcul de toutes les combinaisons possibles
+    // 3. Calcul de toutes les combinaisons possibles avec volume > 0
     let combinaisons = [];
     for (let c in calibres) {
         for (let col in colorations) {
@@ -37,17 +38,35 @@ function calculer() {
     // Tri par volume décroissant
     combinaisons.sort((a, b) => b.volume - a.volume);
 
-    // 4. Circuit le plus faible -> S20
-    let circuitPlusFaible = combinaisons.length > 0 ? combinaisons[combinaisons.length - 1] : { label: "Divers", volume: 0 };
+    // 4. Identification du circuit le plus faible STRICTEMENT INFÉRIEUR À 0.5% (0.005)
+    let circuitPlusFaibleIndex = -1;
     
-    // Combinaisons pour S04 à S19 (16 sorties)
-    let combinaisonsMain = combinaisons.slice(0, combinaisons.length - 1);
+    // Recherche en partant de la fin (du plus faible volume)
+    for (let i = combinaisons.length - 1; i >= 0; i--) {
+        if (combinaisons[i].volume < 0.005) {
+            circuitPlusFaibleIndex = i;
+            break; // On prend la plus faible sous 0.5%
+        }
+    }
 
-    // Dictionnaire pour compter combien de sorties attribuer à chaque produit
+    let circuitPlusFaible = { label: "Aucun (<0.5%)", volume: 0 };
+    let combinaisonsMain = [...combinaisons];
+
+    // Si on trouve une combinaison < 0.5%, on la retire pour la réserver à S20
+    if (circuitPlusFaibleIndex !== -1) {
+        circuitPlusFaible = combinaisons[circuitPlusFaibleIndex];
+        combinaisonsMain.splice(circuitPlusFaibleIndex, 1);
+    } else if (combinaisons.length > 0) {
+        // Secours si toutes les combinaisons sont >= 0.5%
+        circuitPlusFaible = combinaisons[combinaisons.length - 1];
+        combinaisonsMain.pop();
+    }
+
+    // Dictionnaire pour compter les sorties attribuées (S04 à S19 = 16 sorties)
     let repartitionMap = {};
     combinaisonsMain.forEach(item => repartitionMap[item.label] = 0);
 
-    // ÉTAPE A : Assurer au moins 1 sortie pour les volumes >= 0.5%
+    // ÉTAPE A : Attribuer 1 sortie de base aux combinaisons >= 0.5%
     let nbAttribuées = 0;
     combinaisonsMain.forEach(item => {
         if (item.volume >= 0.005 && nbAttribuées < 16) {
@@ -56,7 +75,7 @@ function calculer() {
         }
     });
 
-    // ÉTAPE B : Distribuer le reste des sorties (placesRestantes) au prorata des volumes
+    // ÉTAPE B : Distribuer les sorties bonus au prorata du volume
     let totalVolumeMain = combinaisonsMain.reduce((sum, item) => sum + item.volume, 0);
     let placesRestantes = 16 - nbAttribuées;
 
@@ -74,14 +93,14 @@ function calculer() {
 
     // ÉTAPE C : Sécurité si total < 16 sorties
     let idx = 0;
-    while (nbAttribuées < 16) {
+    while (nbAttribuées < 16 && combinaisonsMain.length > 0) {
         let label = combinaisonsMain[idx % combinaisonsMain.length].label;
         repartitionMap[label]++;
         nbAttribuées++;
         idx++;
     }
 
-    // ÉTAPE D : Génération de la liste ordonnée et REGROUPÉE
+    // ÉTAPE D : Génération de la liste groupée des sorties S04 à S19
     let sortiesAFFECTEES = [];
     combinaisonsMain.forEach(item => {
         let count = repartitionMap[item.label];
@@ -94,16 +113,17 @@ function calculer() {
     for (let i = 0; i < 16; i++) {
         let numSortie = i + 4;
         let sNom = numSortie < 10 ? `S0${numSortie}` : `S${numSortie}`;
-        grille.push({ sortie: sNom, affectation: `🟩 ${sortiesAFFECTEES[i]}` });
+        let libelle = sortiesAFFECTEES[i] ? `🟩 ${sortiesAFFECTEES[i]}` : " Libre";
+        grille.push({ sortie: sNom, affectation: libelle });
     }
 
-    // Sortie 20
+    // Sortie 20 (Réservée au circuit faible < 0.5%)
     grille.push({ 
         sortie: "S20", 
-        affectation: `<span class='badge-faible'>🟪 CIRCUIT PLUS FAIBLE</span> ${circuitPlusFaible.label} (${(circuitPlusFaible.volume * 100).toFixed(2)}%)` 
+        affectation: `<span class='badge-faible'>🟪 CIRCUIT FAIBLE (<0.5%)</span> ${circuitPlusFaible.label} (${(circuitPlusFaible.volume * 100).toFixed(2)}%)` 
     });
 
-    // Affichage
+    // Affichage dans le tableau HTML
     let tbody = document.getElementById('tableau-body');
     tbody.innerHTML = "";
     grille.forEach(item => {
